@@ -9,6 +9,7 @@ import java.sql.SQLException;
 
 @Component
 public class DbConnector {
+
     @Value("${database.url}")
     private String url;
 
