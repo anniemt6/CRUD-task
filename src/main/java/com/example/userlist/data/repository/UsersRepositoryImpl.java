@@ -1,7 +1,7 @@
 package com.example.userlist.data.repository;
 
 import com.example.userlist.data.dao.UserDao;
-import com.example.userlist.domain.repository.UserRepository;
+import com.example.userlist.domain.repository.UsersRepository;
 import com.example.userlist.domain.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -9,12 +9,12 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class UserRepositoryImpl implements UserRepository {
+public class UsersRepositoryImpl implements UsersRepository {
 
     private final UserDao userDao;
 
     @Autowired
-    public UserRepositoryImpl(UserDao userDao) {
+    public UsersRepositoryImpl(UserDao userDao) {
         this.userDao = userDao;
     }
 
