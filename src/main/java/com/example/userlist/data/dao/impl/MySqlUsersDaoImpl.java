@@ -1,9 +1,8 @@
 package com.example.userlist.data.dao.impl;
 
+import com.example.userlist.data.dao.GenericDao;
 import com.example.userlist.data.dao.UserDao;
 import com.example.userlist.data.utils.DbConnector;
-import com.example.userlist.data.utils.DbService;
-import com.example.userlist.data.dao.mappers.DbMapper;
 import com.example.userlist.domain.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -13,151 +12,111 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Component
-public class MySqlUsersDaoImpl implements UserDao {
-
-    private final DbConnector dbConnector;
-
+public class MySqlUsersDaoImpl extends GenericDao implements UserDao {
     private static final String GET_BY_ID = "select * from user where user_id = ?";
     private static final String GET_ALL = "select * from user";
     private static final String CREATE = "insert into user values (?, ?, ?, ?)";
     private static final String UPDATE = "update user set user_name = ?, user_surname = ?, user_age = ? where user_id = ?";
     private static final String DELETE = "delete from user where user_id = ?";
 
+    private static final int ID_COLUMN_INDEX = 1;
+    private static final int NAME_COLUMN_INDEX = 2;
+    private static final int SURNAME_COLUMN_INDEX = 3;
+    private static final int AGE_COLUMN_INDEX = 4;
+
+    private final Mapper<User> userMapper = resultSet -> {
+        if (resultSet.next()) {
+            return new User(
+                    resultSet.getInt(ID_COLUMN_INDEX),
+                    resultSet.getString(NAME_COLUMN_INDEX),
+                    resultSet.getString(SURNAME_COLUMN_INDEX),
+                    resultSet.getInt(AGE_COLUMN_INDEX)
+            );
+        } else {
+            return null;
+        }
+    };
+
+    private final Mapper<List<User>> userListMapper = resultSet -> {
+        List<User> users = new LinkedList<>();
+        User user = userMapper.map(resultSet);
+        while (user != null) {
+            users.add(user);
+            user = userMapper.map(resultSet);
+        }
+        return users;
+    };
+
     @Autowired
-    public MySqlUsersDaoImpl(DbConnector dbConnector) {
-        this.dbConnector = dbConnector;
-    }
+    public MySqlUsersDaoImpl(DbConnector dbConnector) { super(dbConnector); }
 
     @Override
     public User getById(int id) {
-
         User user = null;
-
-        Connection connection = null;
-        PreparedStatement statement = null;
-        ResultSet resultSet = null;
-
         try {
-
-            connection = dbConnector.getConnection();
-            statement = connection.prepareStatement(GET_BY_ID);
-            statement.setInt(1, id);
-
-            resultSet = statement.executeQuery();
-
-            if (resultSet.next()) {
-                user = DbMapper.toUser(resultSet);
-            }
-
+            user = executeQuery(GET_BY_ID, userMapper, statement -> {
+                statement.setInt(ID_COLUMN_INDEX, id);
+            });
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            DbService.closeResultSet(resultSet);
-            DbService.closeStatement(statement);
-            DbService.closeConnection(connection);
         }
-
         return user;
     }
 
     @Override
     public List<User> getAll() {
-        List<User> result = new LinkedList<>();
-
-        Connection connection = null;
-        Statement statement = null;
-        ResultSet resultSet = null;
-
+        List<User> result = null;
         try  {
-
-            connection = dbConnector.getConnection();
-            statement = connection.createStatement();
-
-            resultSet = statement.executeQuery(GET_ALL);
-
-            while (resultSet.next()) {
-                result.add(DbMapper.toUser(resultSet));
-            }
+            result = executeQuery(GET_ALL, userListMapper, null);
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            DbService.closeResultSet(resultSet);
-            DbService.closeStatement(statement);
-            DbService.closeConnection(connection);
         }
-
         return result;
     }
 
     @Override
     public boolean create(User user) {
-        Connection connection = null;
-        PreparedStatement statement = null;
-
         try {
-            connection  = dbConnector.getConnection();
-            statement = connection.prepareStatement(CREATE);
-
-            statement.setInt(1, user.getId());
-            statement.setString(2, user.getUserName());
-            statement.setString(3, user.getUserSurname());
-            statement.setInt(4, user.getUserAge());
-
-            return statement.executeUpdate() == 1;
-
+            executeQuery(CREATE, null, statement -> {
+                setUserDataToStatement(user, statement);
+            });
+            return true;
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            DbService.closeStatement(statement);
-            DbService.closeConnection(connection);
+            return false;
         }
-        return false;
     }
 
     @Override
     public boolean update(User user) {
-        Connection connection = null;
-        PreparedStatement statement = null;
-
         try {
-            connection = dbConnector.getConnection();
-            statement = connection.prepareStatement(UPDATE);
-
-            statement.setInt(1, user.getId());
-            statement.setString(2, user.getUserName());
-            statement.setString(3, user.getUserSurname());
-            statement.setInt(4, user.getUserAge());
-
-            return statement.executeUpdate() == 1;
-
+            executeQuery(UPDATE, null, statement -> {
+                setUserDataToStatement(user, statement);
+            });
+            return true;
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            DbService.closeStatement(statement);
-            DbService.closeConnection(connection);
+            return false;
         }
+    }
 
-        return false;
+    private void setUserDataToStatement(User user, PreparedStatement statement) throws SQLException {
+        statement.setInt(ID_COLUMN_INDEX, user.getId());
+        statement.setString(NAME_COLUMN_INDEX, user.getUserName());
+        statement.setString(SURNAME_COLUMN_INDEX, user.getUserSurname());
+        statement.setInt(AGE_COLUMN_INDEX, user.getUserAge());
     }
 
     @Override
     public boolean delete(User user) {
-        Connection connection = null;
-        PreparedStatement statement = null;
-
         try {
-            connection = dbConnector.getConnection();
-            statement = connection.prepareStatement(DELETE);
-            statement.setInt(1, user.getId());
-
-            return statement.executeUpdate() == 1;
-
+            executeQuery(DELETE, null, statement -> {
+                statement.setInt(ID_COLUMN_INDEX, user.getId());
+            });
+            return true;
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            DbService.closeStatement(statement);
-            DbService.closeConnection(connection);
+            return false;
         }
-        return false;
     }
 }
