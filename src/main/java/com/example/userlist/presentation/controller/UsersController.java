@@ -44,17 +44,17 @@ public class UsersController {
     }
 
     @PostMapping("/create")
-    public Response<Void> createUser(User user) {
+    public Response<Void> createUser(@RequestBody User user) {
         return handleRequest(user, userDao::create);
     }
 
     @PutMapping("/update")
-    public Response<Void> updateUser(User user) {
+    public Response<Void> updateUser(@RequestBody User user) {
         return handleRequest(user, userDao::update);
     }
 
     @DeleteMapping("/delete")
-    public Response<Void> deleteUser(User user) {
+    public Response<Void> deleteUser(@RequestBody User user) {
         return handleRequest(user, userDao::delete);
     }
 }
